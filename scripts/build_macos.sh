@@ -33,7 +33,7 @@ cd ${BUILDDIR}
 download_verify_extract ncurses-6.4.tar.gz
 cd ncurses*
 maybe_patch
-CC=clang CXX=clang++ CFLAGS="${CFLAGS} -arch x86_64 -arch arm64" CXXFLAGS="${CXXFLAGS} -arch x86_64 -arch arm64" ./configure --with-normal --without-progs --enable-overwrite --disable-stripping --enable-widec --with-termlib --disable-database --with-fallbacks=xterm,xterm-256color,screen-256color,linux,vt100 --prefix=${DEPSDIR}
+CC=clang CXX=clang++ CFLAGS="${CFLAGS} -arch ${ARCH}" CXXFLAGS="${CXXFLAGS} -arch ${ARCH}" ./configure --with-normal --without-progs --enable-overwrite --disable-stripping --enable-widec --with-termlib --disable-database --with-fallbacks=xterm,xterm-256color,screen-256color,linux,vt100 --prefix=${DEPSDIR}
 make -j4
 make install.libs
 install_license
@@ -48,7 +48,7 @@ cd ${BUILDDIR}
 download_verify_extract readline-8.2.tar.gz
 cd readline*
 maybe_patch
-CC=clang CFLAGS="${CFLAGS} -arch x86_64 -arch arm64" ./configure --with-curses --disable-shared --prefix=${DEPSDIR}
+CC=clang CFLAGS="${CFLAGS} -arch ${ARCH}" ./configure --with-curses --disable-shared --prefix=${DEPSDIR}
 make -j4
 make install
 install_license
@@ -66,7 +66,7 @@ if [[ "${DISTRIBUTION}" != "headless" ]]; then
   cd tcl*
   maybe_patch
   cd unix
-  CC=clang CFLAGS="${CFLAGS} -arch x86_64 -arch arm64" ./configure --disable-shared --enable-aqua --prefix=${DEPSDIR}
+  CC=clang CFLAGS="${CFLAGS} -arch ${ARCH}" ./configure --disable-shared --enable-aqua --prefix=${DEPSDIR}
   make -j${NPROC}
   make install
   cd ..
@@ -83,7 +83,7 @@ if [[ "${DISTRIBUTION}" != "headless" ]]; then
   cd tk*
   maybe_patch
   cd unix
-  CC=clang CFLAGS="${CFLAGS} -arch x86_64 -arch arm64" ./configure --disable-shared --enable-aqua --prefix=${DEPSDIR}
+  CC=clang CFLAGS="${CFLAGS} -arch ${ARCH}" ./configure --disable-shared --enable-aqua --prefix=${DEPSDIR}
   make -j${NPROC}
   make install
   cd ..
@@ -105,7 +105,7 @@ else
 fi
 cd openssl*
 maybe_patch
-CC=${WORKDIR}/scripts/cc ./Configure enable-rc5 zlib no-asm no-shared darwin64-x86_64-cc --prefix=${DEPSDIR}
+CC=${WORKDIR}/scripts/cc ./Configure enable-rc5 zlib no-asm no-shared darwin64-${ARCH}-cc --prefix=${DEPSDIR}
 make -j${NPROC}
 make install_sw
 install_license
@@ -127,7 +127,7 @@ mkdir build
 cd build
 cmake \
   -G "Unix Makefiles" \
-  "-DCMAKE_OSX_ARCHITECTURES=arm64;x86_64" \
+  "-DCMAKE_OSX_ARCHITECTURES=${ARCH}" \
   -DCMAKE_OSX_DEPLOYMENT_TARGET=${MACOSX_DEPLOYMENT_TARGET} \
   -DCMAKE_INSTALL_PREFIX:PATH=${DEPSDIR} \
   ..
@@ -152,7 +152,7 @@ mkdir build
 cd build
 cmake \
   -G "Unix Makefiles" \
-  "-DCMAKE_OSX_ARCHITECTURES=arm64;x86_64" \
+  "-DCMAKE_OSX_ARCHITECTURES=${ARCH}" \
   -DCMAKE_OSX_DEPLOYMENT_TARGET=${MACOSX_DEPLOYMENT_TARGET} \
   -DCMAKE_INSTALL_PREFIX:PATH=${DEPSDIR} \
   ..
@@ -173,7 +173,7 @@ cd ${WORKDIR}
 download_verify_extract sqlite-autoconf-3450000.tar.gz
 cd sqlite-autoconf-3450000
 maybe_patch
-CC=clang CFLAGS="${CFLAGS} -arch x86_64 -arch arm64"  ./configure --prefix ${DEPSDIR}
+CC=clang CFLAGS="${CFLAGS} -arch ${ARCH}"  ./configure --prefix ${DEPSDIR}
 make -j${NPROC}
 make install
 
@@ -193,7 +193,7 @@ mkdir build
 cd build
 cmake \
   -G "Unix Makefiles" \
-  "-DCMAKE_OSX_ARCHITECTURES=arm64;x86_64" \
+  "-DCMAKE_OSX_ARCHITECTURES=${ARCH}" \
   -DCMAKE_OSX_DEPLOYMENT_TARGET=${MACOSX_DEPLOYMENT_TARGET} \
   -DCMAKE_INSTALL_PREFIX:PATH=${DEPSDIR} \
   ..
@@ -214,7 +214,7 @@ cd ${BUILDDIR}
 download_verify_extract expat-2.6.2.tar.gz
 cd expat*
 maybe_patch
-CC=clang CFLAGS="${CFLAGS} -arch x86_64 -arch arm64"  ./configure --disable-shared --prefix=${DEPSDIR}
+CC=clang CFLAGS="${CFLAGS} -arch ${ARCH}"  ./configure --disable-shared --prefix=${DEPSDIR}
 make -j${NPROC}
 make install
 install_license
@@ -231,7 +231,7 @@ cd ${BUILDDIR}
 download_verify_extract gdbm-1.23.tar.gz
 cd gdbm*
 maybe_patch
-CC=clang CFLAGS="${CFLAGS} -arch x86_64 -arch arm64" ./configure --enable-libgdbm-compat --without-readline --prefix=${DEPSDIR}
+CC=clang CFLAGS="${CFLAGS} -arch ${ARCH}" ./configure --enable-libgdbm-compat --without-readline --prefix=${DEPSDIR}
 make -j${NPROC}
 make install
 install_license
@@ -246,23 +246,14 @@ cd ${BUILDDIR}
 download_verify_extract libffi-3.4.6.tar.gz
 cd libffi-3.4.6
 maybe_patch
-cd ..
-cp -r libffi-3.4.6 libffi-3.4.6-arm64
-cd libffi-3.4.6
-CC="/usr/bin/cc" ./configure --prefix ${DEPSDIR}
-make -j${NPROC}
-make install
-cd ${BUILDDIR}
-mkdir libffi-arm64-out
-cd libffi-3.4.6-arm64
-CC="/usr/bin/cc" CFLAGS="${CFLAGS} -target arm64-apple-macos11" ./configure --prefix ${BUILDDIR}/libffi-arm64-out --build=aarch64-apple-darwin --host=aarch64
+if [[ "${ARCH}" == "arm64" ]]; then
+  CC="/usr/bin/cc" CFLAGS="${CFLAGS} -target arm64-apple-macos11" ./configure --prefix ${DEPSDIR} --build=aarch64-apple-darwin --host=aarch64
+else
+  CC="/usr/bin/cc" ./configure --prefix ${DEPSDIR}
+fi
 make -j${NPROC}
 make install
 install_license
-
-cd ${BUILDDIR}
-lipo -create -output libffi.a ${DEPSDIR}/lib/libffi.a ${BUILDDIR}/libffi-arm64-out/lib/libffi.a
-mv libffi.a ${DEPSDIR}/lib/libffi.a
 
 file ${DEPSDIR}/lib/libffi.a
 
@@ -277,7 +268,7 @@ download_verify_extract util-linux-2.39.3.tar.gz
 cd util-linux*
 maybe_patch libuuid-2.39.3
 ./autogen.sh
-CC=clang CFLAGS="${CFLAGS} -arch x86_64 -arch arm64" ./configure --disable-all-programs --enable-libuuid --prefix=${DEPSDIR}
+CC=clang CFLAGS="${CFLAGS} -arch ${ARCH}" ./configure --disable-all-programs --enable-libuuid --prefix=${DEPSDIR}
 make -j${NPROC}
 make install
 install_license ./Documentation/licenses/COPYING.BSD-3-Clause libuuid-2.39.3
@@ -317,7 +308,7 @@ function build_python () {
     "${cmake_verbose_flags[@]}" \
     ${cmake_python_features} \
     -G "Unix Makefiles" \
-    "-DCMAKE_OSX_ARCHITECTURES=arm64;x86_64" \
+    "-DCMAKE_OSX_ARCHITECTURES=${ARCH}" \
     -DCMAKE_OSX_DEPLOYMENT_TARGET=${MACOSX_DEPLOYMENT_TARGET} \
     -DCMAKE_IGNORE_PREFIX_PATH=/Applications \
     -DPYTHON_VERSION=${PYTHON_FULL_VER} \

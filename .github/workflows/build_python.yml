@@ -9,7 +9,7 @@ on:
       platforms:
         required: true
         type: string
-        default: "linux-x86_64,linux-aarch64,linux-i386,linux-arm,linux-riscv64,linux-loongarch64,linux-s390x,linux-powerpc64le,macos,windows-x86_64,windows-aarch64,cosmo,freebsd13-x86_64,freebsd14-x86_64,freebsd15-x86_64,freebsd13-aarch64,freebsd14-aarch64,freebsd15-aarch64,solaris11-x86_64"
+        default: "linux-x86_64,linux-aarch64,linux-i386,linux-arm,linux-riscv64,linux-loongarch64,linux-s390x,linux-powerpc64le,macos-x86_64,macos-arm64,windows-x86_64,windows-aarch64,cosmo,freebsd13-x86_64,freebsd14-x86_64,freebsd15-x86_64,freebsd13-aarch64,freebsd14-aarch64,freebsd15-aarch64,solaris11-x86_64"
       buildsystem_branch:
         required: false
         type: string
@@ -253,13 +253,19 @@ jobs:
           ./scripts/launch_test.sh ${{ matrix.arch }} ${{ inputs.python_version }} ${{ matrix.distribution }} windows "${{ env.RUN_TESTS }}"
 
   build_macos:
-    name: MacOS ${{ inputs.python_version }} universal2 ${{ matrix.distribution }} (build)
+    name: MacOS ${{ inputs.python_version }} ${{ matrix.arch }} ${{ matrix.distribution }} (build)
     if: ${{ contains(inputs.platforms, 'macos') }}
     runs-on: macos-13
     strategy:
       fail-fast: false
       matrix:
         distribution: [full, headless]
+        arch: [x86_64, arm64]
+        exclude:
+          - arch: ${{ !contains(inputs.platforms, 'macos-x86_64') && 'x86_64' || '' }}
+          - arch: ${{ !contains(inputs.platforms, 'macos-arm64') && 'arm64' || '' }}
+          - distribution: ${{ !contains(inputs.platforms, 'full') && 'full' || '' }}
+          - distribution: ${{ !contains(inputs.platforms, 'headless') && 'headless' || '' }}
 
     steps:
       - name: Checkout
@@ -276,7 +282,7 @@ jobs:
       - name: Build
         run: |
           set -ex
-          ./scripts/build_macos.sh universal2 ${{ inputs.python_version }} ${{ matrix.distribution }}
+          ./scripts/build_macos.sh ${{ matrix.arch }} ${{ inputs.python_version }} ${{ matrix.distribution }}
 
       - name: Interactive debugging
         uses: fawazahmed0/action-debug-vscode@v3
@@ -285,14 +291,14 @@ jobs:
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: python-darwin-universal2-${{ matrix.distribution }}-${{ inputs.python_version }}
+          name: python-darwin-${{ matrix.arch }}-${{ matrix.distribution }}-${{ inputs.python_version }}
           path: ./python*.zip
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         if: ${{ always() && inputs.debug }}
         with:
-          name: build-python-darwin-universal2-${{ matrix.distribution }}-${{ inputs.python_version }}
+          name: build-python-darwin-${{ matrix.arch }}-${{ matrix.distribution }}-${{ inputs.python_version }}
           path: ./*python*.tar.gz
 
   test_macos:
@@ -302,7 +308,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        arch: [x86_64, aarch64]
+        arch: [x86_64, arm64]
         distribution: [full, headless]
 
     steps:
@@ -312,13 +318,13 @@ jobs:
       - name: Download artifact
         uses: actions/download-artifact@v4
         with:
-          name: python-darwin-universal2-${{ matrix.distribution }}-${{ inputs.python_version }}
+          name: python-darwin-${{ matrix.arch }}-${{ matrix.distribution }}-${{ inputs.python_version }}
           path: .
 
       - name: Test python in clean environment
         shell: bash
         run: |
-          ./scripts/launch_test.sh universal2 ${{ inputs.python_version }} ${{ matrix.distribution }} darwin "${{ env.RUN_TESTS }}"
+          ./scripts/launch_test.sh ${{ matrix.arch }} ${{ inputs.python_version }} ${{ matrix.distribution }} darwin "${{ env.RUN_TESTS }}"
 
   build_freebsd:
     name: FreeBSD ${{ matrix.release }} ${{ inputs.python_version }} ${{ matrix.arch }} ${{ matrix.distribution }} (build)
